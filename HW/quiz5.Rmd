@@ -1,0 +1,849 @@
+---
+title: "quiz 5"
+date: "9/21/2020"
+output: html_document
+---
+
+1
+```{r}
+#library("mvtnorm")
+#s = matrix(c(4,0,0, 0,4,0, 0,0,4),3,3)
+#u = c(3.5, 3.7, 4.5)
+
+s=sqrt(4)
+x = c(2.4, 3, 3.5)
+
+pa = 0.5
+pb = 0.5
+ua = c(2.6, 3.5, 3.8)
+ub = c(6.1, 7, 7.2)
+
+px = dnorm(x[1], mean = ua[1], sd = s) * dnorm(x[2], mean = ua[2], sd = s) * dnorm(x[3], mean = ua[3], sd = s) *pa +  dnorm(x[1], mean = ub[1], sd = s) * dnorm(x[2], mean = ub[2], sd = s) * dnorm(x[3], mean = ub[3], sd = s) * pb
+
+q1 = dnorm(x[1], mean = ua[1], sd = s) * dnorm(x[2], mean = ua[2], sd = s) * dnorm(x[3], mean = ua[3], sd = s) * pa
+q2 = dnorm(x[1], mean = ub[1], sd = s) * dnorm(x[2], mean = ub[2], sd = s) * dnorm(x[3], mean = ub[3], sd = s) * pb
+
+q1/px
+q2/px
+```
+
+2
+```{r}
+library("mlbench")
+library("tibble")
+library("caret")
+
+# set seed 
+set.seed(95)
+
+# generate data
+class_data = as_tibble(mlbench.circle(n = 1000, d = 3))
+
+# tst-trn split data
+trn_idx = sample(nrow(class_data), size = 0.8 * nrow(class_data))
+trn = class_data[trn_idx, ]
+tst = class_data[-trn_idx, ]
+
+# est-val split data
+est_idx = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+# check data
+#trn
+
+# values of k to consider
+k_vals = seq(from = 1, to = 45, by = 2)
+
+acc <- function(y,yh){
+  mean(y==yh)
+}
+
+km <- function(k, data1, data2){
+  mod = knn3(classes~., data = data1, k = k)
+  acc(data2$classes, predict(mod, data2, type = "class"))
+}
+
+as <- sapply(k_vals, km, est, val)
+as
+
+match(as,max(as))
+max(as)
+which(as %in% max(as))
+k_vals[8]
+
+km(k = 15, data1 = trn, data2 = tst)
+```
+
+3
+```{r}
+library("mlbench")
+library("tibble")
+library("rpart")
+
+# set seed 
+set.seed(957)
+
+# generate data
+class_data = as_tibble(mlbench.simplex(n = 2000, d = 3, sd = 0.5))
+
+# tst-trn split data
+trn_idx = sample(nrow(class_data), size = 0.8 * nrow(class_data))
+trn = class_data[trn_idx, ]
+tst = class_data[-trn_idx, ]
+
+# est-val split data
+est_idx = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+# check data
+trn
+
+# values of cp to consider
+cp_vals = c(1, 0.1, 0.01, 0.001, 0.0001, 0)
+
+
+mis <- function(y,yh){
+  mean(y!=yh)
+}
+
+tm <- function(cp, data1, data2){
+  mod = rpart(classes~., data = data1, cp = cp, minsplit = 5)
+  mis(data2$classes, predict(mod, data2, type = "class"))
+}
+as <- sapply(cp_vals, tm, est, val)
+as
+
+match(as,min(as))
+as[match(min(as),as)]
+cp_vals[3]
+
+tm(cp = 0.01, data1 = trn, data2 = tst)
+```
+```{r}
+# load packages
+library("tibble")
+library("rpart")
+library("caret")
+
+# set seed 
+set.seed(949)
+
+# load data and remove NAs
+airquality = as_tibble(na.omit(airquality))
+
+# test-train split
+aq_trn_idx = sample(nrow(airquality), size = 0.8 * nrow(airquality))
+aq_trn = airquality[aq_trn_idx, ]
+aq_tst = airquality[-aq_trn_idx, ]
+
+# estimation-validation split
+aq_est_idx = sample(nrow(aq_trn), size = 0.8 * nrow(aq_trn))
+aq_est = aq_trn[aq_est_idx, ]
+aq_val = aq_trn[-aq_est_idx, ]
+
+?airquality
+# values of cp to consider
+cp = c(1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0)
+
+tm <- function(cp, data1, data2){
+  mod = rpart(Ozone~., data = data1, cp = cp, minsplit = 2)
+  rmse(data2$Ozone, predict(mod,data2))
+}
+
+tm2 <- function(cp, data1, data2){
+  mod = rpart(Ozone~., data = data1, cp = cp, minsplit = 2)
+  mae(data2$Ozone, predict(mod,data2))
+}
+
+as <- sapply(cp, tm, aq_est, aq_val)
+as
+sqrt( sum( (as-mean(as))^2 )/(length(as)-1) )
+which(as %in% min(as))
+
+
+mod = rpart(Ozone~., data = aq_trn, cp = cp[4], minsplit = 2)
+mae(aq_tst$Ozone, predict(mod,aq_tst))
+```
+
+4
+```{r}
+x1=0.91
+x2=-0.03
+
+1.38 + 1.2 * x1 + 1.52 * x2
+```
+
+```{r}
+x1=0.27
+x2=-0.41
+
+1.38 + 1.2 * x1 + 1.52 * x2
+```
+
+```{r}
+x1=-0.94
+x2=0.04
+
+exp(1.38 + 1.2 * x1 + 1.52 * x2)
+```
+
+```{r}
+x1=-0.02
+x2=0.03
+
+exp(1.38 + 1.2 * x1 + 1.52 * x2)
+```
+
+5
+```{r}
+x1=-0.94
+x2=0.04
+
+a=-0.47 + 1.31 * x1 - 2.62 * x2
+1/(1+exp(-a))
+```
+
+```{r}
+x1=0.3
+x2=0.57
+
+a=-0.47 + 1.31 * x1 - 2.62 * x2
+1/(1+exp(-a))
+```
+
+```{r}
+x1=0.11
+x2=-0.04
+
+a=-0.47 + 1.31 * x1 - 2.62 * x2
+1-1/(1+exp(-a))
+```
+
+```{r}
+x1=0.4
+x2=0.68
+
+a=-0.47 + 1.31 * x1 - 2.62 * x2
+1-1/(1+exp(-a))
+```
+
+6
+```{r}
+# decision boundary is when px is 0.5 which means log(p(x) / (1 - p(x))) = 0
+x1=0.78
+x2=-3.43*x1/3.23 + 3.75/3.23
+x2
+```
+
+```{r}
+x1=0.85
+x2=-3.43*x1/3.23 + 3.75/3.23
+x2
+```
+
+```{r}
+x2=0.94
+x1=-3.23*x2/3.43 + 3.75/3.43
+x1
+```
+
+```{r}
+x2=-0.56
+x1=-3.23*x2/3.43 + 3.75/3.43
+x1
+```
+
+7
+```{r}
+# function to generate data
+gen_logistic_data = function(sample_size = 100) {
+  x1 = round(runif(n = sample_size), 2)
+  x2 = round(runif(n = sample_size), 2)
+  nu = 2 + 3 * x1 + -5 * x2
+  y = rbinom(n = sample_size, size = 1, prob = boot::inv.logit(nu))
+  data.frame(y, x1, x2)
+}
+
+# simulating the data
+set.seed(42)
+some_data = gen_logistic_data()
+
+# checking the data
+head(some_data)
+```
+
+```{r}
+b0 = -2.75
+b1 = 2.41
+b2 = -8.01
+a = b0 + b1*some_data$x1 + b2*some_data$x2
+
+-sum(log(1+exp(a)))  +  some_data$y %*% a
+sqrt(b1^2+b2^2)
+```
+```{r}
+b0 = -2.62
+b1 = 0.8
+b2 = -5.09
+a = b0 + b1*some_data$x1 + b2*some_data$x2
+
+-sum(log(1+exp(a)))  +  some_data$y %*% a
+sqrt(b1^2+b2^2)
+```
+```{r}
+b0 = 1.83
+b1 = 0.82
+b2 = -6.65
+a = b0 + b1*some_data$x1 + b2*some_data$x2
+
+-sum(log(1+exp(a)))  +  some_data$y %*% a
+sqrt(b1^2+b2^2)
+```
+
+8
+```{r}
+x1=-0.02
+x2=-0.19
+a=-2.51-2.47*x1+4.5*x2
+1/(1+exp(-a))
+```
+
+```{r}
+x1=-0.62
+x2=0.11
+a=3.75+0.04*x1+3.06*x2
+1/(1+exp(-a))
+```
+
+```{r}
+x1=-0.01
+x2=0.64
+a=3.75+0.04*x1+3.06*x2
+1/(1+exp(-a))
+```
+
+```{r}
+x1=0.44
+x2=0.63
+a=3.75+0.04*x1+3.06*x2
+1/(1+exp(-a))
+```
+
+9
+```{r}
+# load packages
+library(mlbench)
+library(tibble)
+
+# simulate data
+set.seed(42)
+sim_data = as_tibble(mlbench.2dnormals(n = 300, sd = 1.5))
+
+# check data
+#sim_data
+
+sim_data
+
+mod <- glm(classes~., data = sim_data, family = binomial)
+summary(mod)$coefficients
+
+predict(mod,data.frame(x.1 = 0.37, x.2 = 0.81), type = "response")
+
+a = predict(mod,data.frame(x.1 = -0.98, x.2 = 0.53), type = "response")
+1-a
+
+x1= -0.23
+x2 = 1.05762231*x1/(-0.76188728) + 0.02466096/(-0.76188728)
+x2
+```
+
+10
+```{r}
+# load packages
+library(mlbench)
+library(tibble)
+library(purrr)
+
+# simulate data
+set.seed(2893)
+sim_est = as_tibble(mlbench.circle(200))
+sim_val = as_tibble(mlbench.circle(200))
+sim_trn = rbind(sim_est, sim_val)
+sim_tst = as_tibble(mlbench.circle(1000))
+
+# check data
+#sim_est
+levels(sim_est$classes)
+
+
+mod1 <- glm(classes~1, data = sim_est, family = binomial)
+mod2 <- glm(classes~., data = sim_est, family = binomial)
+mod3 <- glm(classes~poly(x.1,2)+poly(x.2,2), data = sim_est, family = binomial)
+
+predict(mod1,data.frame(x.1=1,x.2=1),type = 'response')
+
+mean(sim_est$classes==2)
+```
+```{r}
+pred_glm1 <- ifelse(predict(mod1,sim_val,type = "response")>0.5, 2,1)
+mean(sim_val$classes!=pred_glm1)
+pred_glm2 <- ifelse(predict(mod2,sim_val,type = "response")>0.5, 2,1)
+mean(sim_val$classes!=pred_glm2)
+pred_glm3 <- ifelse(predict(mod3,sim_val,type = "response")>0.5, 2,1)
+mean(sim_val$classes!=pred_glm3)
+
+modtrn <- glm(classes~poly(x.1,2)+poly(x.2,2), data = sim_trn, family = binomial)
+pred_tst <- ifelse(predict(modtrn, sim_tst, type = "response")>0.5, 2,1)
+mean(sim_tst$classes!=pred_tst)
+```
+
+11
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("cvms")
+
+# set seed 
+set.seed(52118)
+
+# load data and coerce to tibble
+default = as_tibble(ISLR::Default)
+
+# split data
+dft_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+dft_trn = default[dft_trn_idx, ]
+dft_tst = default[-dft_trn_idx, ]
+
+# check data
+dft_trn
+
+mod <- glm(default~., data = dft_trn, family = binomial)
+pred <- predict(mod, dft_tst, type = "response")
+
+r <- tibble(
+  act = dft_tst$default,
+  pred = pred
+)
+
+eva <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "Yes", type = "binomial", cutoff = 0.5)
+eva
+
+plot_confusion_matrix( eva$`Confusion Matrix`[[1]] )
+```
+```{r}
+eva2 <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "Yes", type = "binomial", cutoff = 0.01)
+
+plot_confusion_matrix( eva2$`Confusion Matrix`[[1]] )
+```
+
+12
+```{r}
+# load packages
+library("tibble")
+library("rpart")
+library("caret")
+library("mlbench")
+
+# set seed 
+set.seed(84)
+
+# simulate data
+sim_data = as_tibble(mlbench.spirals(n = 500, sd = 0.15))
+
+# test-train split
+sim_trn_idx = sample(nrow(sim_data), size = 0.8 * nrow(sim_data))
+sim_trn = sim_data[sim_trn_idx, ]
+sim_tst = sim_data[-sim_trn_idx, ]
+
+# estimation-validation split
+sim_est_idx = sample(nrow(sim_trn), size = 0.8 * nrow(sim_trn))
+sim_est = sim_trn[sim_est_idx, ]
+sim_val = sim_trn[-sim_est_idx, ]
+
+# check data
+sim_trn
+
+
+mod <- knn3(classes~., data = sim_est, k=13)
+pred <- predict(mod, sim_val)[,2]
+
+r <- tibble(
+  act = sim_val$classes,
+  pred = pred
+)
+
+eva <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = 2, type = "binomial", cutoff = 0.5, metrics = list("Accuracy"=TRUE))
+eva
+```
+```{r}
+acc = mean(sim_val$classes==predict(mod, sim_val,type = "class"))
+acc
+1-acc
+mean(sim_val$classes==2)
+1-0.475
+```
+
+13
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("rpart")
+
+# set seed 
+set.seed(4)
+
+# load data, remove NA rows, coerce to tibble
+data("PimaIndiansDiabetes2")
+diabetes = as_tibble(na.omit(PimaIndiansDiabetes2))
+
+# split data
+dbt_trn_idx = sample(nrow(diabetes), size = 0.8 * nrow(diabetes))
+dbt_trn = diabetes[dbt_trn_idx, ]
+dbt_tst = diabetes[-dbt_trn_idx, ]
+
+# check data
+dbt_trn
+
+
+mod <- rpart(diabetes~., data = dbt_trn)
+pred <- predict(mod, dbt_tst)[,"pos"]
+
+r <- tibble(
+  act = dbt_tst$diabetes,
+  pred = pred
+)
+
+eva <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "pos", type = "binomial", cutoff = 0.5, metrics = list("Accuracy"=TRUE))
+eva
+```
+```{r}
+eva2 <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "pos", type = "binomial", cutoff = 0.85, metrics = list("Accuracy"=TRUE))
+eva2
+```
+
+14
+```{r}
+# load packages
+library("tidyverse")
+library("caret")
+
+# set seed 
+set.seed(543)
+
+# load dataset
+birthwt = as_tibble(MASS::birthwt)
+
+# change response to named factor variable
+birthwt$low = factor(ifelse(birthwt$low == 0, "normal", "low"))
+
+# test-train split
+bwt_trn_idx = sample(nrow(birthwt), size = 0.8 * nrow(birthwt))
+bwt_trn = birthwt[bwt_trn_idx, ]
+bwt_tst = birthwt[-bwt_trn_idx, ]
+
+# check data
+bwt_trn
+
+mod <- knn3(low~. - bwt, data = bwt_trn, k=5)
+pred <- predict(mod, bwt_tst)[,"normal"]
+
+r <- tibble(
+  act = bwt_tst$low,
+  pred = pred
+)
+
+evaluate(data = r, target_col = 'act', prediction_cols = 'pred', positive = "low", cutoff = 0.5, type = "binomial", metrics = list("Accuracy"=TRUE))
+
+```
+
+15
+```{r}
+# load packages
+library("tidyverse")
+library("rpart")
+
+# set seed 
+set.seed(177)
+
+# load dataset
+data(GermanCredit, package = "caret")
+gc = as_tibble(GermanCredit)
+
+# test-train split
+gc_trn_idx = sample(nrow(gc), size = 0.6 * nrow(gc))
+gc_trn = gc[gc_trn_idx, ]
+gc_tst = gc[-gc_trn_idx, ]
+
+# check data
+head(gc_trn)
+levels(gc_trn$Class)
+
+
+mod <- rpart(Class~., data = gc_trn)
+pred <- predict(mod, gc_tst)[,"Bad"]
+
+
+p05 <- sum(gc_tst$Class=="Bad" & pred>0.5)/sum(pred>0.5)
+p05
+1-p05
+
+p08 <- sum(gc_tst$Class=="Bad" & pred>0.8)/sum(pred>0.8)
+p08
+1-p08
+```
+
+16
+```{r}
+# load packages
+library("tidyverse")
+library("rpart")
+
+# set seed 
+set.seed(97685)
+
+# load dataset
+data(GermanCredit, package = "caret")
+gc = as_tibble(GermanCredit)
+
+# test-train split
+gc_trn_idx = sample(nrow(gc), size = 0.6 * nrow(gc))
+gc_trn = gc[gc_trn_idx, ]
+gc_tst = gc[-gc_trn_idx, ]
+
+# estimation-validation split
+gc_est_idx = sample(nrow(gc_trn), size = 0.6 * nrow(gc_trn))
+gc_est = gc_trn[gc_est_idx, ]
+gc_val = gc_trn[-gc_est_idx, ]
+
+# check data
+head(gc_trn)
+
+
+#est
+mod = rpart(Class~., data = gc_est)
+pred <- predict(mod, gc_est)[,"Good"]
+
+r <- tibble(
+  act = gc_est$Class,
+  pred = pred
+)
+
+evaluate(
+  data = r, 
+  target_col = 'act', 
+  prediction_cols = 'pred', 
+  positive = "Bad", 
+  cutoff = 0.5, 
+  type = "binomial"
+)
+```
+```{r}
+#val
+pred <- predict(mod, gc_val)[,"Good"]
+r <- tibble(
+  act = gc_val$Class,
+  pred = pred
+)
+evaluate(
+  data = r, 
+  target_col = 'act', 
+  prediction_cols = 'pred', 
+  positive = "Bad", 
+  cutoff = 0.5, 
+  type = "binomial"
+)
+```
+```{r}
+mod = rpart(Class~., data = gc_trn)
+pred <- predict(mod, gc_tst)[,"Good"]
+predict(mod, gc_tst)
+r <- tibble(
+  act = gc_tst$Class,
+  pred = pred
+)
+evaluate(
+  data = r, 
+  target_col = 'act', 
+  prediction_cols = 'pred', 
+  positive = "Bad", 
+  cutoff = 0.5, 
+  type = "binomial"
+)
+```
+Matrix
+![Matrix](Matrix.png)
+
+```{r}
+# NIR = max {P/(P+N), N/(P+N)}
+```
+
+```{r}
+# load packages
+library("tibble")
+library("rpart.plot")
+
+# set seed 
+set.seed(762)
+
+# load and prep data
+titanic = na.omit(as_tibble(ptitanic))
+
+# test-train split
+trn_idx  = sample(nrow(titanic), size = 0.8 * nrow(titanic))
+t_trn = titanic[trn_idx, ]
+t_tst = titanic[-trn_idx, ]
+
+t_trn
+
+mod <- glm(survived~age, data = t_trn, family = binomial)
+pred <- predict(mod, t_tst, type = "response")
+
+r <- tibble(
+  act = t_tst$survived,
+  pred = pred
+)
+
+eva <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "died", type = "binomial", cutoff = 0.61,metrics = list("Accuracy"=TRUE))
+eva
+```
+```{r}
+eva2 <- evaluate(data = r, target_col = "act", prediction_cols = "pred", positive = "Yes", type = "binomial", cutoff = 0.01)
+
+plot_confusion_matrix( eva2$`Confusion Matrix`[[1]] )
+```
+
+
+
+```{r}
+# load packages
+library("tibble")
+library("rpart")
+library("mlbench")
+
+# set seed 
+set.seed(405)
+
+# generate data
+data = as_tibble(mlbench.twonorm(n = 1000, d = 4))
+data$classes = factor(ifelse(data$classes == 1, "foo", "bar"))
+
+# test-train split
+trn_idx  = sample(nrow(data), size = 0.8 * nrow(data))
+trn = data[trn_idx, ]
+tst = data[-trn_idx, ]
+
+# estimation-validation split
+est_idx  = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+trn
+#est
+mod = rpart(classes~., data = trn)
+pred <- predict(mod, tst)[,"foo"]
+
+r <- tibble(
+  act = tst$classes,
+  pred = pred
+)
+
+eva3 <- evaluate(
+  data = r, 
+  target_col = 'act', 
+  prediction_cols = 'pred', 
+  positive = "foo", 
+  cutoff = 0.5, 
+  type = "binomial"
+)
+
+plot_confusion_matrix( eva3$`Confusion Matrix`[[1]] )
+```
+
+```{r}
+mod = rpart(classes~., data = est)
+pred <- predict(mod, val)[,"foo"]
+
+r <- tibble(
+  act = val$classes,
+  pred = pred
+)
+
+eva2 <- evaluate(
+  data = r, 
+  target_col = 'act', 
+  prediction_cols = 'pred', 
+  positive = "foo", 
+  cutoff = 0.5, 
+  type = "binomial"
+)
+
+plot_confusion_matrix( eva20.$`Confusion Matrix`[[1]] )
+```
+
+```{r}
+# load packages
+library("tibble")
+library("rpart")
+library("mlbench")
+
+# set seed 
+set.seed(627)
+
+# simulate data
+data = as_tibble(mlbench.2dnormals(n = 2500, cl = 3))
+
+# test-train split
+trn_idx  = sample(nrow(data), size = 0.8 * nrow(data))
+trn = data[trn_idx, ]
+tst = data[-trn_idx, ]
+
+# estimation-validation split
+est_idx  = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+# parameter values
+cp = c(0, 0.0001, 0.001, 0.01, 0.1, 0.5, 1)
+
+mis <- function(y,yh){
+  mean(y==yh)
+}
+
+tm <- function(cp, data1, data2){
+  mod = rpart(classes~., data = data1, cp = cp)
+  sum(mis(data2$classes, predict(mod, data2, type = "class")))
+}
+
+as <- sapply(cp, tm, est, val)
+as
+sd(as)
+which(as %in% max(as))
+
+mod = rpart(classes~., data = trn, cp = 0.01)
+a = predict(mod, tst, type = "class")
+sum(a == 2)
+```
+
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(73303)
+
+# generate data
+class_data = mlbench.simplex(n = 800, d = 2, sd = 0.5)
+class_data = as_tibble(class_data)
+
+model <- knn3(classes~., data = class_data, k = 3)
+predict(model, data.frame(x.1 = -1.22, x.2 = -0.57))
+predict(model, data.frame(x.1 = 0.57, x.2 = -0.64))
+```
+

@@ -1,0 +1,206 @@
+---
+title: "Quiz8"
+author: "Jiusi Li"
+date: "10/27/2020"
+output: html_document
+---
+
+
+1
+```{r}
+# load packages
+library("glmnet")
+
+# set seed 
+set.seed(11396)
+
+# load data and coerce to tibble
+auto = tibble::as_tibble(ISLR::Auto[, -9])
+
+# test-train split data
+auto_trn_idx = sample(nrow(auto), size = 0.5 * nrow(auto))
+auto_trn = auto[auto_trn_idx, ]
+auto_tst = auto[-auto_trn_idx, ]
+
+# create x matrix for use with cv.glmnet()
+auto_trn_x = as.matrix(auto_trn[, -1])
+auto_tst_x = as.matrix(auto_tst[, -1])
+
+
+rmse <- function(y,yh){
+  sqrt(mean((y - yh)^2))
+}
+
+set.seed(42)
+modL = cv.glmnet(auto_trn_x, auto_trn$mpg, alpha = 1)
+modR = cv.glmnet(auto_trn_x, auto_trn$mpg, alpha = 0)
+
+rmse(auto_tst$mpg,predict(modL,auto_tst_x))
+rmse(auto_tst$mpg,predict(modR,auto_tst_x,s="lambda.min"))
+```
+
+
+2
+```{r}
+# load packages
+library("glmnet")
+
+# set seed 
+set.seed(36647)
+
+# load data and coerce to tibble
+auto = tibble::as_tibble(ISLR::Auto[, -9])
+
+# create training data
+auto_trn = dplyr::sample_frac(auto, size = 0.3)
+
+# create x matrix for use with cv.glmnet()
+auto_trn_x = as.matrix(auto_trn[, -1])
+
+lm = lm(mpg~., data = auto_trn)
+set.seed(42)
+modL = cv.glmnet(auto_trn_x, auto_trn$mpg, alpha = 1)
+
+coef(lm)
+coef(modL, s = "lambda.1se")
+
+sum(abs(coef(lm)[c(-1)]))
+sum(abs(coef(modL, s = "lambda.1se")[-1]))
+```
+
+
+3
+```{r}
+# load packages
+library("glmnet")
+library("tibble")
+
+# set seed 
+set.seed(97612)
+
+# simulate split data
+sim_trn = as_tibble(caret::twoClassSim(n = 250, noiseVars = 25))
+sim_tst = as_tibble(caret::twoClassSim(n = 500, noiseVars = 25))
+
+# check data
+#sim_trn
+levels(sim_trn$Class)
+
+# create x matrix (train and test) for use with cv.glmnet()
+sim_trn_x = as.matrix(sim_trn[, -ncol(sim_trn)])
+sim_tst_x = as.matrix(sim_tst[, -ncol(sim_tst)])
+
+# create y vector (train and test) for use with cv.glmnet()
+sim_trn_y = sim_trn$Class
+sim_tst_y = sim_tst$Class
+
+
+acc = function(y,yh){
+  mean(y==yh)
+}
+
+mod = glm(Class~., data = sim_trn, family = "binomial")
+set.seed(42)
+modR = cv.glmnet(sim_trn_x, sim_trn_y, alpha = 0, family = "binomial")
+
+acc(sim_tst_y,ifelse(predict(mod,sim_tst)>0, "Class2", "Class1"))
+mean(predict(mod,sim_tst,type = "response")>0.999)
+
+acc(sim_tst_y, ifelse(predict(modR, sim_tst_x, s = "lambda.1se")>0, "Class2", "Class1"))
+max(predict(modR, sim_tst_x, s = "lambda.1se", type = "response"))
+```
+
+
+4
+```{r}
+# load packages
+library("tibble")
+library("dplyr")
+library("glmnet")
+
+# install devtools and ucidata if needed
+# install.packages("devtools")
+# devtools::install_github("coatless/ucidata")
+
+# create new response variables
+wine = as_tibble(ucidata::wine)
+wine = wine %>% 
+  mutate(quality_num = quality,
+         quality_cat = as.factor(quality)) %>% 
+  select(-quality)
+
+wine$quality_level = factor(ifelse(wine$quality_num>6,"High","Low"))
+
+# split data
+set.seed(2)
+idx = sample(nrow(wine), size = 1000)
+wine_trn = wine[idx, ]
+wine_tst = wine[-idx, ]
+
+# create x matrix (train and test) for use with cv.glmnet()
+wine_trn_x = model.matrix( ~ . - quality_num - quality_cat - quality_level, data = wine_trn)[, -1]
+wine_tst_x = model.matrix( ~ . - quality_num - quality_cat - quality_level, data = wine_tst)[, -1]
+
+
+levels(wine$quality_level)
+
+set.seed(42)
+mod = cv.glmnet(wine_trn_x, wine_trn$quality_level, alpha = 0, nfolds =5, family = "binomial")
+
+sum(coef(mod)[-1]!=0)
+mod$lambda.min
+mod$lambda.1se
+
+sum( coef(mod,s = "lambda.min")[-1]^2 )
+sum( coef(mod,s = "lambda.1se")[-1]^2 )
+
+acc(wine_tst$quality_level, ifelse(predict(mod,wine_tst_x,s = "lambda.min")>0,"Low","High"))
+```
+
+
+5
+```{r}
+# load packages
+library("tibble")
+library("dplyr")
+library("glmnet")
+
+# install devtools and ucidata if needed (uncomment and run lines below)
+# install.packages("devtools")
+# devtools::install_github("coatless/ucidata")
+
+# create new response variables
+wine = as_tibble(ucidata::wine)
+wine = wine %>% 
+  mutate(quality_num = quality,
+         quality_cat = as.factor(quality)) %>% 
+  select(-quality)
+
+# split data
+set.seed(2)
+idx = sample(nrow(wine), size = 1000)
+wine_trn = wine[idx, ]
+wine_tst = wine[-idx, ]
+
+# create x matrix (train and test) for use with cv.glmnet()
+wine_trn_x = model.matrix(quality_num ~ . - quality_cat, data = wine_trn)[, -1]
+wine_tst_x = model.matrix(quality_num ~ . - quality_cat, data = wine_tst)[, -1]
+
+# create y vector (train and test) for use with cv.glmnet()
+wine_trn_y = wine_trn$quality_num
+wine_tst_y = wine_tst$quality_num
+
+set.seed(42)
+mod = cv.glmnet(wine_trn_x, wine_trn_y, alpha = 1, nfolds =10, lambda = c(0.2,0.02,0.002))
+
+sum(coef(mod,s = 0.2)[-1]!=0)
+sum(coef(mod,s = 0.02)[-1]!=0)
+sum(coef(mod,s = 0.002)[-1]!=0)
+
+coef(mod,s = 0.2)[12]
+coef(mod,s = 0.02)[12]
+coef(mod,s = 0.002)[12]
+
+rmse(wine_tst_y, predict(mod,wine_tst_x,s = "lambda.min"))
+```
+

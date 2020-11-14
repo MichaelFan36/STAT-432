@@ -1,0 +1,463 @@
+---
+title: "Quiz3"
+date: "9/14/2020"
+output: html_document
+---
+
+```{r}
+# load packages
+library("tibble")
+
+# set seed 
+set.seed(75493)
+
+# define function to simulate data
+gen_nonlin_data = function(sample_size = 200) {
+  x = runif(n = sample_size, min = 0, max = 10)
+  mu = 0 + 3 * 2 ^ (x - 1)
+  eps = rnorm(n = sample_size, mean = 0, sd = 100)
+  y = mu + eps
+  tibble(x, y)
+}
+
+# simulate (training) data
+sim_trn = gen_nonlin_data()
+
+# check data (numerically)
+head(sim_trn)
+
+#check data (visually)
+#plot(sim_trn, pch = 20, col = "darkgrey")
+#grid()
+
+lm1 <- lm(y~x,data = sim_trn)
+lm2 <- lm(y~I(2^(x-1)),data = sim_trn)
+?I
+summary(lm1)$coefficients[2,1]-3
+summary(lm1)$coefficients
+?summary
+summary(lm2)$coefficients[2,1]-3
+
+```
+```{r}
+# load packages
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(3582)
+
+# define function to simulate data
+gen_nonlin_data = function(sample_size = 200) {
+  x = runif(n = sample_size, min = 0, max = 10)
+  mu = 0 + 3 * 2 ^ (x - 1)
+  eps = rnorm(n = sample_size, mean = 0, sd = 100)
+  y = mu + eps
+  tibble(x, y)
+}
+
+# simulate (training) data
+sim_trn = gen_nonlin_data()
+
+# check data (numerically)
+#head(sim_trn)
+
+# check data (visually)
+# plot(sim_trn, pch = 20, col = "darkgrey")
+# grid()
+
+lm1 <- lm(y~x,data = sim_trn)
+lm2 <- lm(y~I(2^(x-1)),data = sim_trn)
+lm3 <- knnreg(y~x,data = sim_trn,k=5)
+lm4 <- rpart(y~x,data = sim_trn)
+
+u = 0 + 3 * 2 ^ (4.6 - 1)
+abs(predict(lm1,data.frame(x=4.6))-u)
+abs(predict(lm2,data.frame(x=4.6))-u)
+abs(predict(lm3,data.frame(x=4.6))-u)
+abs(predict(lm4,data.frame(x=4.6))-u)
+```
+
+```{r}
+library("caret")
+library("rpart")
+library("tidyverse")
+
+# set seed 
+set.seed(4941)
+
+# define function to simulate data
+gen_nonlin_data = function(sample_size = 200) {
+  x = runif(n = sample_size, min = 0, max = 10)
+  mu = 0 + 3 * 2 ^ (x - 1)
+  eps = rnorm(n = sample_size, mean = 0, sd = 100)
+  y = mu + eps
+  tibble(x, y)
+}
+
+# simulate data
+sim_est = gen_nonlin_data(sample_size = 200)
+sim_val = gen_nonlin_data(sample_size = 50)
+sim_trn = rbind(sim_est, sim_val)
+sim_tst = gen_nonlin_data(sample_size = 50)
+
+rmse <- function(y,yh) {
+  r <- sqrt(mean((y-yh)^2))
+  return(r)
+}
+
+
+lm1 <- lm(y~x,data = sim_est)
+lm2 <- lm(y~I(2^(x-1)),data = sim_est)
+lm3 <- knnreg(y~x,data = sim_est,k=15)
+lm4 <- rpart(y~x,data = sim_est)
+
+rmse(sim_val$y , predict(lm1,sim_val))
+rmse(sim_val$y , predict(lm2,sim_val))
+rmse(sim_val$y , predict(lm3,sim_val))
+rmse(sim_val$y , predict(lm4,sim_val))
+
+lmtrn <- lm(y~I(2^(x-1)),data = sim_trn)
+rmse(sim_tst$y , predict(lmtrn,sim_tst))
+```
+
+```{r}
+library("caret")
+library("tidyverse")
+
+# set seed 
+set.seed(37694)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm <- knnreg(bwt~age+lwt+smoke,data = bwt_trn, k=15)
+predict(lm, data.frame(age=23, lwt=113, smoke=factor('smoker', levels = c("smoker","non-smoker")) ))/1000
+predict(lm, data.frame(age=23, lwt=113, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))/1000
+```
+
+```{r}
+library("rpart")
+library("tidyverse")
+
+# set seed 
+set.seed(29388)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm <- rpart(bwt~age+lwt+smoke,data = bwt_trn, cp = 0.005)
+predict(lm, data.frame(age=29, lwt=124, smoke=factor('smoker', levels = c("smoker","non-smoker")) ))
+predict(lm, data.frame(age=29, lwt=124, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+```
+
+```{r}
+library("caret")
+library("tidyverse")
+
+# set seed 
+set.seed(55718)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm1 <- lm(bwt~1,data = bwt_est)
+lm2 <- knnreg(bwt~age+lwt+smoke,data = bwt_est, k=length(bwt_est$age))
+
+predict(lm1, data.frame(age=36, lwt=124, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+predict(lm1, data.frame(age=26, lwt=135, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+predict(lm1, data.frame(age=32, lwt=112, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+predict(lm2, data.frame(age=36, lwt=124, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+predict(lm2, data.frame(age=26, lwt=130, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+predict(lm2, data.frame(age=32, lwt=112, smoke=factor('non-smoker', levels = c("smoker","non-smoker")) ))
+
+mean(bwt_est$bwt)
+```
+
+```{r}
+library("caret")
+library("tidyverse")
+
+# set seed 
+set.seed(71627)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm <- knnreg(bwt~.,data = bwt_est, k=1)
+rmse(bwt_est$bwt, predict(lm,bwt_est))
+rmse(bwt_val$bwt, predict(lm,bwt_val))
+```
+
+```{r}
+library("rpart")
+library("tidyverse")
+
+# set seed 
+set.seed(46847)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm <- rpart(bwt~.,data = bwt_est, cp=0, minsplit=2)
+rmse(bwt_est$bwt, predict(lm,bwt_est))
+rmse(bwt_val$bwt, predict(lm,bwt_val))
+```
+
+```{r}
+library("caret")
+library("tidyverse")
+
+# set seed 
+set.seed(46231)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+# bigger k, lower flexible
+# smaller k, smaller bias
+# bigger k, higher variance 
+# smaller k has less or equal RMSE than bigger k
+lm1 <- knnreg(bwt~.,data = bwt_est, k=5)
+lm2 <- knnreg(bwt~.,data = bwt_est, k=17)
+lm3 <- knnreg(bwt~.,data = bwt_est, k=23)
+rmse(bwt_val$bwt, predict(lm1,bwt_val))
+rmse(bwt_val$bwt, predict(lm2,bwt_val))
+rmse(bwt_val$bwt, predict(lm3,bwt_val))
+
+lmtrn <- knnreg(bwt~.,data = bwt_trn, k=17)
+rmse(bwt_tst$bwt, predict(lmtrn,bwt_tst))
+```
+
+```{r}
+library("rpart")
+library("tidyverse")
+
+# set seed 
+set.seed(78464)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+#bigger cp is, lower flexible is
+#smaller cp, higher variance(variable)
+#bigger cp, bigger bias
+lm1 <- rpart(bwt~.,data = bwt_est, minsplit = 2, cp=0.1)
+lm2 <- rpart(bwt~.,data = bwt_est, minsplit = 2, cp=0.01)
+lm3 <- rpart(bwt~.,data = bwt_est, minsplit = 2, cp=0.001)
+rmse(bwt_val$bwt, predict(lm1,bwt_val))
+rmse(bwt_val$bwt, predict(lm2,bwt_val))
+rmse(bwt_val$bwt, predict(lm3,bwt_val))
+
+lmtrn <- rpart(bwt~.,data = bwt_trn, minsplit = 2, cp=0.1)
+rmse(bwt_tst$bwt, predict(lmtrn,bwt_tst))
+```
+
+```{r}
+# set seed 
+set.seed(70874)
+
+# "simulate" predictions
+mu_hat = rnorm(n = 100, mean = 2.75, sd = 2)
+
+mse <- function(y,yh) {
+  r <- mean((y-yh)^2)
+  return(r)
+}
+
+mse(2.7,mu_hat)
+mean(mu_hat)-2.7
+mean( (mu_hat-mean(mu_hat))^2 )
+# Bias^2 + Variance = MSE
+(mean(mu_hat)-2.7)^2 + mean( (mu_hat-mean(mu_hat))^2 )
+```
+
+```{r}
+library("caret")
+library("mlbench")
+library("tidyverse")
+
+# set seed 
+set.seed(66452)
+
+# simulate train data
+sim_trn_0010 = as.data.frame(mlbench.friedman1(n = 10))
+sim_trn_0100 = as.data.frame(mlbench.friedman1(n = 100))
+sim_trn_1000 = as.data.frame(mlbench.friedman1(n = 1000))
+
+# simulate test data
+sim_tst_1000 = as.data.frame(mlbench.friedman1(n = 1000))
+
+# check data
+head(sim_trn_0100)
+
+lm1 <- knnreg(y~., data = sim_trn_0010, k=4)
+lm2 <- knnreg(y~., data = sim_trn_0100, k=4)
+lm3 <- knnreg(y~., data = sim_trn_1000, k=4)
+
+rmse(sim_tst_1000$y, predict(lm1,sim_tst_1000))
+rmse(sim_tst_1000$y, predict(lm2,sim_tst_1000))
+rmse(sim_tst_1000$y, predict(lm3,sim_tst_1000))
+```
+
+```{r}
+library("caret")
+library("mlbench")
+library("tidyverse")
+
+# set seed 
+set.seed(74883)
+
+# simulate data
+est_data = as.data.frame((mlbench.friedman1(n = 500, sd = 1)))
+val_data = as.data.frame((mlbench.friedman1(n = 500, sd = 1)))
+
+# check data
+head(est_data)
+
+
+knn <- function(n,data1,data2){
+  lm <- knnreg(y ~ x.1+x.2+x.3+x.4+x.5, data = data1, k=n)
+  r <- rmse(data2$y, predict(lm,data2) )
+  return(r)
+}
+
+trmse <- sapply(1:100, knn, data1=est_data, data2=est_data)
+vrmse <- sapply(1:100, knn, data1=est_data, data2=val_data)
+
+#1 is Overfitting
+vrmse[1]
+#100 is Underfitting
+vrmse[100]
+
+sqrt( sum( (trmse-mean(trmse))^2 )/(100-1) )
+sqrt( sum( (vrmse-mean(vrmse))^2 )/(100-1) )
+
+sd(trmse)
+sd(vrmse)
+```
+```{r}
+# model parameters are:
+#. 1. residual variance sigma^2 in a linear model
+#. 2. The regression coefficient B1 in a linear model
+#. 3. The regression coefficient B0 in a linear model
+```
+

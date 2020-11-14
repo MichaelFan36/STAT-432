@@ -1,0 +1,303 @@
+---
+title: "Quiz 4"
+date: "9/19/2020"
+output: html_document
+---
+
+1
+```{r}
+pa = 0.27
+pb = 0.44
+pc = 0.29
+
+(a = pexp(4, rate = 0.5, lower.tail = FALSE)*pb)
+(b = pexp(4, rate = 0.5, lower.tail = FALSE)*pa+pexp(4, rate = 0.5, lower.tail = FALSE)*pb+pexp(4, rate = 0.3, lower.tail = FALSE)*pc)
+a/b
+```
+
+```{r}
+12/41
+12/29
+4/29
+8/29
+```
+
+```{r}
+1/13
+3/13
+9/13
+```
+
+```{r}
+0.04	+	0.06 + 0.05	+	0.13 + 0.01	+	0.03 +	0.12 +	0.09	
+```
+
+8
+```{r}
+a = 0.17*dnorm(x = 9.9, mean = 5.1, sd = 1.5)
+b = 0.15*dnorm(x = 9.9, mean = 5.5, sd = 1.5)
+c = 0.68*dnorm(x = 9.9, mean = 6.6, sd = 1.5)
+sum = a + b + c
+
+a/sum
+b/sum
+c/sum
+```
+
+9
+```{r}
+0.36 * dpois(5, lambda = 3.89)
+0.52 * dpois(5, lambda = 5.43)
+0.12 * dpois(5, lambda = 5.97)
+```
+
+10
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(62954)
+
+# generate data
+class_data = mlbench.simplex(n = 800, d = 2, sd = 0.5)
+class_data = as_tibble(class_data)
+
+
+model <- knn3(classes~., data = class_data, k = 17)
+predict(model, data.frame(x.1 = -1.84, x.2 = -0.32))
+predict(model, data.frame(x.1 = 0.48, x.2 = 0.22))
+```
+
+11
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(65453)
+
+# generate data
+class_data = mlbench.simplex(n = 800, d = 2, sd = 0.5)
+class_data = as_tibble(class_data)
+
+
+model <- rpart(classes~., data = class_data, cp = 0.001, minsplit = 5 )
+predict(model, data.frame(x.1 = -0.25, x.2 = 1.68))
+predict(model, data.frame(x.1 = -0.36, x.2 = 0.45))
+```
+
+12
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(63037)
+
+# load data and coerce to tibble
+default = as_tibble(ISLR::Default)
+
+# split data
+dft_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+dft_trn = default[dft_trn_idx, ]
+dft_tst = default[-dft_trn_idx, ]
+
+# check data
+dft_trn
+
+model <- knn3(default~., data = dft_trn, k = 13)
+predict(model, data.frame(student = factor('Yes', levels = c("Yes","No")), balance = 614, income = 34353))
+```
+
+13
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(14139)
+
+# load data and coerce to tibble
+default = as_tibble(ISLR::Default)
+
+# split data
+dft_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+dft_trn = default[dft_trn_idx, ]
+dft_tst = default[-dft_trn_idx, ]
+
+# check data
+dft_trn
+
+
+model <- rpart(default~., data = dft_trn, cp = 0.01, minsplit = 10)
+predict(model, data.frame(student = factor('Yes', levels = c("Yes","No")), balance = 464, income = 40712))
+```
+
+14
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(32297)
+
+# load data and coerce to tibble
+default = as_tibble(ISLR::Default)
+
+# split data
+dft_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+dft_trn = default[dft_trn_idx, ]
+dft_tst = default[-dft_trn_idx, ]
+
+# check data
+dft_trn
+
+accuracy <- function(y,yh){
+  mean(y==yh)
+}
+model <- knn3(default~., data = dft_trn, k = 5)
+accuracy(dft_tst$default, predict(model,dft_tst,type = "class"))
+```
+
+15
+```{r}
+library("mlbench")
+library("tibble")
+library("caret")
+library("rpart")
+
+# set seed 
+set.seed(87113)
+
+# load data and coerce to tibble
+default = as_tibble(ISLR::Default)
+
+# split data
+dft_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+dft_trn = default[dft_trn_idx, ]
+dft_tst = default[-dft_trn_idx, ]
+
+# check data
+dft_trn
+
+
+model <- rpart(default~., data = dft_trn, cp = 0.01, minsplit = 10)
+1-accuracy(dft_tst$default, predict(model,dft_tst,type = "class"))
+```
+
+16
+```{r}
+library("mlbench")
+library("tibble")
+library("caret")
+
+# set seed 
+set.seed(391)
+
+# generate data
+class_data = as_tibble(mlbench.circle(n = 1000, d = 3))
+
+# tst-trn split data
+trn_idx = sample(nrow(class_data), size = 0.8 * nrow(class_data))
+trn = class_data[trn_idx, ]
+tst = class_data[-trn_idx, ]
+
+# est-val split data
+est_idx = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+# check data
+trn
+
+# values of k to consider
+k_vals = seq(from = 1, to = 45, by = 2)
+
+
+
+ms <- function(k){
+  model <- knn3(classes~., data = est, k = k)
+  accuracy(val$classes,predict(model,val,type = "class"))
+}
+
+# val accuracy for all models
+(la = sapply(k_vals, ms))
+
+# highest is the best
+# find best k
+match(la,max(la))
+which(la %in% max(la))
+(bestK <- k_vals[14])
+
+# tst accuracy for the best model
+model1 <- knn3(classes~., data = trn, k = bestK)
+accuracy(tst$classes,predict(model1,tst,type = "class"))
+```
+
+17
+```{r}
+library("mlbench")
+library("tibble")
+library("rpart")
+
+# set seed 
+set.seed(465)
+
+# generate data
+class_data = as_tibble(mlbench.simplex(n = 2000, d = 3, sd = 0.5))
+
+# tst-trn split data
+trn_idx = sample(nrow(class_data), size = 0.8 * nrow(class_data))
+trn = class_data[trn_idx, ]
+tst = class_data[-trn_idx, ]
+
+# est-val split data
+est_idx = sample(nrow(trn), size = 0.8 * nrow(trn))
+est = trn[est_idx, ]
+val = trn[-est_idx, ]
+
+# check data
+trn
+
+# values of cp to consider
+cp_vals = c(1, 0.1, 0.01, 0.001, 0.0001, 0)
+
+
+mt <- function(cp){
+  model <- rpart(classes~., data = est, cp = cp, minsplit = 5)
+  1-accuracy(val$classes,predict(model,val,type = "class"))
+}
+
+# val accuracy for all models
+(lm = sapply(cp_vals, mt))
+#0 is most variable, 1 is most biased
+#lowest is the best
+
+# find best k
+match(lm,min(lm))
+which(lm %in% min(lm))
+(bestCp <- cp_vals[3])
+
+# tst accuracy for the best model
+model1 <- rpart(classes~., data = trn, cp = bestCp)
+1-accuracy(tst$classes,predict(model1,tst,type = "class"))
+
+plot(trn, col = trn$classes)
+```
+

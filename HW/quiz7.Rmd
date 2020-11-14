@@ -1,0 +1,410 @@
+---
+title: "Quiz7"
+author: "Jiusi Li"
+date: "10/20/2020"
+output: html_document
+---
+
+
+1
+```{r}
+# suggested packages
+library(purrr)
+
+# set seed 
+set.seed(62399)
+
+# load data and coerce to tibble
+hitters = tibble::as_tibble(ISLR::Hitters)
+
+# store indexes for use in 500 bootstrap resamples
+resamp_idx = caret::createResample(hitters$Hits, times = 500)
+
+hits <- function(n){
+  median( hitters$Hits[resamp_idx[[n]]] )
+}
+
+medians = sapply(1:500, hits)
+quantile(x = medians, probs = c(0.025, 0.975))
+```
+
+
+2
+```{r}
+# set seed 
+set.seed(25035)
+
+# load data and coerce to tibble
+data("GermanCredit", package = "caret")
+gc = tibble::as_tibble(GermanCredit)
+
+# store indexes for use in 300 bootstrap resamples
+resamp_idx = caret::createResample(gc$Amount, times = 300)
+
+loans <- function(n){
+  mean( gc$Amount[resamp_idx[[n]]]>3000 )
+}
+
+p = sapply(1:300, loans)
+quantile(x = p, probs = c(0.01, 0.99))
+```
+
+
+3
+```{r}
+# set seed 
+set.seed(69864)
+
+# load data and coerce to tibble
+bstn = tibble::as_tibble(MASS::Boston)
+
+# store indexes for use in 200 bootstrap resamples
+resamp_idx = caret::createResample(bstn$medv, times = 200)
+
+
+medvs <- function(n){
+  lm = lm(medv~rm, data = bstn[ resamp_idx[[n]], ] )
+  predict(lm,data.frame(rm=7.206))
+}
+
+mns = sapply(1:200, medvs)
+quantile(x = mns, probs = c(0.05, 0.95))
+```
+
+
+4
+```{r}
+# set seed 
+set.seed(29341)
+
+# load data and coerce to tibble
+bstn = tibble::as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# store indexes for 10 fold cross-validation
+index_fold = caret::createFolds(bstn_trn$medv, k = 10)
+
+# extract the knnreg function from the caret package
+knnreg = caret::knnreg
+
+
+rmse <- function(y,yh){
+  sqrt( mean((y-yh)^2) )
+}
+
+medvs_rmse <- function(n){
+  val = bstn_trn[index_fold[[n]],]
+  est = bstn_trn[-index_fold[[n]],]
+  
+  mod = knnreg(medv~., data = est, k = 3)
+  rmse(val$medv, predict(mod,val))
+}
+
+rmses = sapply(1:10, medvs_rmse)
+mean(rmses)
+sqrt(sum((rmses-mean(rmses))^2)/9)
+```
+
+
+5
+```{r}
+set.seed(33028)
+
+# load data and coerce to tibble
+default = tibble::as_tibble(ISLR::Default)
+
+# test-train split
+default_trn_idx = sample(nrow(default), size = 0.8 * nrow(default))
+default_trn = default[default_trn_idx, ]
+default_tst = default[-default_trn_idx, ]
+
+# store indexes for 5 fold cross-validation
+index_fold = caret::createFolds(default_trn$default, k = 5)
+
+
+misclass <- function(y,yh){
+  mean( y!=yh )
+}
+
+defaults_mis <- function(n){
+  val = default_trn[index_fold[[n]],]
+  est = default_trn[-index_fold[[n]],]
+  
+  mod = glm(default~., data = est, family = binomial)
+  misclass(val$default, ifelse(predict(mod,val)>0,"Yes","No"))
+}
+
+
+miss = sapply(1:5, defaults_mis)
+mean(miss)
+sqrt(sum((miss-mean(miss))^2)/4)
+```
+
+
+6
+```{r}
+# load packages
+library("rpart")
+
+# set seed 
+set.seed(56260)
+
+# load data
+data(Glass, package = "mlbench")
+
+# coerce to tibble
+glass = tibble::as_tibble(Glass)
+
+# test-train split
+glass_trn_idx = sample(nrow(glass), size = 0.8 * nrow(glass))
+glass_trn = glass[glass_trn_idx, ]
+glass_tst = glass[-glass_trn_idx, ]
+
+# store indexes for 5 fold cross-validation
+index_fold = caret::createFolds(glass_trn$Type, k = 5)
+
+
+acc <- function(y,yh){
+  mean( y==yh )
+}
+
+typeacc <- function(n){
+  val = glass_trn[index_fold[[n]],]
+  est = glass_trn[-index_fold[[n]],]
+  
+  mod = rpart(Type~., data = est, cp = 0.1, minsplit = 2)
+  acc(val$Type, predict(mod,val, type = "class"))
+}
+
+
+accs = sapply(1:5, typeacc)
+mean(accs)
+sqrt(sum((accs-mean(accs))^2)/4)
+```
+
+
+7
+```{r}
+set.seed(94672)
+
+# load and coerce data to tibble
+bstn = tibble::as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# store indexes for 10 fold cross-validation
+index_fold = caret::createFolds(bstn_trn$medv, k = 10)
+
+
+metric <- function(y,yh){
+  mean( abs(y-yh)>9 )
+}
+
+medvme <- function(n){
+  val = bstn_trn[index_fold[[n]],]
+  est = bstn_trn[-index_fold[[n]],]
+  
+  mod = lm(medv~rad, data = est)
+  metric(val$medv, predict(mod,val))
+}
+
+metrics = sapply(1:10, medvme)
+mean(metrics)
+sqrt(sum((metrics-mean(metrics))^2)/9)
+```
+
+8
+```{r}
+set.seed(92379)
+
+# load data and coerce to tibble
+bstn = tibble::as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# store indexes for 10 fold cross-validation
+index_fold = caret::createFolds(bstn_trn$medv, k = 10)
+
+
+metric <- function(y,yh){
+  max( abs(y-yh) )
+}
+
+medvme <- function(n){
+  val = bstn_trn[index_fold[[n]],]
+  est = bstn_trn[-index_fold[[n]],]
+  
+  mod = lm(medv~indus, data = est)
+  metric(val$medv, predict(mod,val))
+}
+
+metrics = sapply(1:10, medvme)
+mean(metrics)
+sqrt(sum((metrics-mean(metrics))^2)/9)
+```
+
+
+9
+```{r}
+library("rpart")
+library("tidyverse")
+
+# set seed 
+set.seed(65944)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# check data
+#head(bwt_trn)
+
+# store indexes for 10 fold cross-validation
+index_fold = caret::createFolds(bwt_trn$bwt, k = 10)
+
+
+
+mae <- function(y,yh){
+  mean( abs(y-yh) )
+}
+
+bwtmae01 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = rpart(bwt~., data = est, minsplit = 2, cp = 0.1)
+  mae(val$bwt, predict(mod,val))
+}
+
+maes = sapply(1:10, bwtmae01)
+mean(maes)
+```
+```{r}
+bwtmae001 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = rpart(bwt~., data = est, minsplit = 2, cp = 0.01)
+  mae(val$bwt, predict(mod,val))
+}
+
+maes = sapply(1:10, bwtmae001)
+mean(maes)
+```
+```{r}
+bwtmae0001 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = rpart(bwt~., data = est, minsplit = 2, cp = 0.001)
+  mae(val$bwt, predict(mod,val))
+}
+
+maes = sapply(1:10, bwtmae0001)
+mean(maes)
+```
+```{r}
+modtrn = rpart(bwt~., data = bwt_trn, minsplit = 2, cp = 0.1)
+mae(bwt_tst$bwt, predict(modtrn,bwt_tst))
+```
+
+
+10
+```{r}
+library("caret")
+library("tidyverse")
+
+# set seed 
+set.seed(64300)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  dplyr::select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# check data
+#head(bwt_trn)
+
+# store indexes for 5 fold cross-validation
+index_fold = caret::createFolds(bwt_trn$bwt, k = 5)
+
+
+bwtrmse11 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = knnreg(bwt~., data = est, k = 33)
+  rmse(val$bwt, predict(mod,val))
+}
+
+rmses = sapply(1:5, bwtrmse11)
+mean(rmses)
+```
+```{r}
+bwtrmse23 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = knnreg(bwt~., data = est, k = 43)
+  rmse(val$bwt, predict(mod,val))
+}
+
+rmses = sapply(1:5, bwtrmse23)
+mean(rmses)
+```
+```{r}
+bwtrmse45 <- function(n){
+  val = bwt_trn[index_fold[[n]],]
+  est = bwt_trn[-index_fold[[n]],]
+  
+  mod = knnreg(bwt~., data = est, k = 46)
+  rmse(val$bwt, predict(mod,val))
+}
+
+rmses = sapply(1:5, bwtrmse45)
+mean(rmses)
+```
+```{r}
+modtrn = knnreg(bwt~., data = bwt_trn, k = 46)
+rmse(bwt_tst$bwt, predict(modtrn,bwt_tst))
+```
+
+
+
+
+
+
+
+
+
+
+

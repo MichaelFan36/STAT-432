@@ -1,0 +1,346 @@
+---
+title: "Quiz2"
+date: "9/3/2020"
+output: html_document
+---
+
+```{r}
+a1=0.41*dpois(4,5.88)
+a1
+
+a2=0.28*dpois(4,5.28)+0.41*dpois(4,5.88)+0.31*dpois(4,6.79)
+a2
+
+a3=a1/a2
+a3
+```
+
+
+```{r}
+dpois(3,2)
+dgeom(3,1/4)
+```
+
+
+```{r}
+# set seed 
+set.seed(99315)
+
+# generate data from known poisson distribution
+pois_data = rpois(n = 250, lambda = 3.5)
+
+# check data
+head(pois_data, n = 10)
+
+a = mean(pois_data)
+b = sqrt(a)
+c = dpois(7,a)
+d = sum(pois_data == 10)/250
+
+a
+b
+c
+d
+```
+
+```{r}
+# set seed 
+set.seed(347)
+
+# generate data from known normal distribution
+norm_data = rnorm(n = 500, mean = 4.2, sd = 4.2)
+
+# check data
+head(norm_data, n = 10)
+
+
+a = mean(norm_data)
+b = sqrt(mean((norm_data-a)^2))
+c = pnorm(q = 6,mean = a,sd = b,lower.tail = FALSE)
+d = mean(norm_data>8)
+
+a
+b
+c
+d
+```
+
+```{r}
+# set seed 
+set.seed(3477)
+
+# generate data from known bernoulli distribution
+bern_data = rbinom(n = 250, size = 1, prob = 0.25)
+
+# check data
+head(bern_data, n = 10)
+
+n = 250
+k = sum(bern_data)
+k
+
+ll <- function(p) {
+  r <- k*log(p) + (n-k)*log(1-p)
+  r2 <- log(prod(dbinom(x = bern_data, size = 1, prob = p)))
+  return(c(r,r2))
+}
+
+a = ll(0.33)
+b = ll(0.44)
+c = ll(0.45)
+
+a
+b
+c
+?prod
+```
+
+
+```{r}
+# set seed 
+set.seed(68839)
+
+# generate data from known normal distribution
+norm_data = rnorm(n = 1000, mean = 42, sd = 0.42)
+
+# check data
+head(norm_data, n = 10)
+
+u = 40.45
+s = 0.43
+sum(-(norm_data-u)^2/(2*s^2)-log(s)-log(2*pi)/2)
+```
+
+
+```{r}
+# load packages
+library("tibble")
+
+# set seed 
+set.seed(12668)
+
+# load data
+bstn = as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# estimation-validation split
+bstn_est_idx = sample(nrow(bstn_trn), size = 0.8 * nrow(bstn_trn))
+bstn_est = bstn_trn[bstn_est_idx, ]
+bstn_val = bstn_trn[-bstn_est_idx, ]
+
+# check data
+head(bstn_trn)
+
+
+
+lm_trn <- lm(medv~lstat + ptratio + tax,data=bstn_trn)
+summary(lm_trn)
+```
+```{r}
+rmse <- function(y,yh) {
+  r <- sqrt(mean((y-yh)^2))
+  return(r)
+}
+
+mae <- function(y,yh) {
+  r <- mean(abs(y-yh))
+  return(r)
+}
+```
+
+```{r}
+# load packages
+library("tibble")
+library("dplyr")
+
+# set seed 
+set.seed(75794)
+
+# load and wrangle data
+data(mtcars)
+mtcars = as_tibble(mtcars)
+mtcars$cyl = factor(mtcars$cyl)
+mtcars$am = factor(ifelse(mtcars$am == 0, "automatic", "manual"))
+mtcars = mtcars %>% select(mpg, cyl, disp, hp, am)
+
+# test-train split
+mtc_trn_idx = sample(nrow(mtcars), size = 0.6 * nrow(mtcars))
+mtc_trn = mtcars[mtc_trn_idx, ]
+mtc_tst = mtcars[-mtc_trn_idx, ]
+
+# estimation-validation split
+mtc_est_idx = sample(nrow(mtc_trn), size = 0.6 * nrow(mtc_trn))
+mtc_est = mtc_trn[mtc_est_idx, ]
+mtc_val = mtc_trn[-mtc_est_idx, ]
+
+# check data
+head(mtc_trn)
+?mtcars
+
+lm1 <- lm(mpg~cyl+disp, data = mtc_est)
+lm2 <- lm(mpg~cyl+disp, data = mtc_trn)
+rmse(mtc_est$mpg, yh=predict(lm1,mtc_est))
+rmse(mtc_val$mpg, yh=predict(lm1,mtc_val))
+rmse(mtc_tst$mpg, yh=predict(lm2,mtc_tst))
+```
+
+```{r}
+# set seed 
+set.seed(57784)
+
+# load data
+bstn = as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# estimation-validation split
+bstn_est_idx = sample(nrow(bstn_trn), size = 0.8 * nrow(bstn_trn))
+bstn_est = bstn_trn[bstn_est_idx, ]
+bstn_val = bstn_trn[-bstn_est_idx, ]
+
+# check data
+head(bstn_trn)
+
+
+
+lmest <- lm(medv~poly(lstat,degree = 3), data = bstn_est)
+lmtrn <- lm(medv~poly(lstat,degree = 3), data = bstn_trn)
+
+rmse(bstn_est$medv, yh=predict(lmest,bstn_est))
+rmse(bstn_val$medv, yh=predict(lmest,bstn_val))
+rmse(bstn_tst$medv, yh=predict(lmtrn,bstn_tst))
+
+mae(bstn_est$medv, yh=predict(lmest,bstn_est))
+mae(bstn_val$medv, yh=predict(lmest,bstn_val))
+mae(bstn_tst$medv, yh=predict(lmtrn,bstn_tst))
+```
+```{r}
+# set seed 
+set.seed(60955)
+
+# load data
+bstn = as_tibble(MASS::Boston)
+
+# test-train split
+bstn_trn_idx = sample(nrow(bstn), size = 0.8 * nrow(bstn))
+bstn_trn = bstn[bstn_trn_idx, ]
+bstn_tst = bstn[-bstn_trn_idx, ]
+
+# estimation-validation split
+bstn_est_idx = sample(nrow(bstn_trn), size = 0.8 * nrow(bstn_trn))
+bstn_est = bstn_trn[bstn_est_idx, ]
+bstn_val = bstn_trn[-bstn_est_idx, ]
+
+
+
+lmtrn <- lm(log(medv)~lstat, data = bstn_trn)
+
+exp(predict(lmtrn, data.frame(lstat = 11.69)))
+exp(predict(lmtrn, data.frame(lstat = 16)))
+exp(predict(lmtrn, data.frame(lstat = 14.51)))
+```
+
+```{r}
+# load packages
+library("tidyverse")
+
+# set seed 
+set.seed(36528)
+# load data
+bwt = as_tibble(MASS::birthwt)
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lm1 <- lm(bwt~age+lwt, data = bwt_est)
+lm2 <- lm(bwt~age+lwt+race, data = bwt_est)
+lm3 <- lm(bwt~age+lwt+race+smoke, data = bwt_est)
+lm4 <- lm(bwt~., data = bwt_est)
+
+rmse(bwt_val$bwt, yh = predict(lm1,bwt_val))
+rmse(bwt_val$bwt, yh = predict(lm2,bwt_val))
+rmse(bwt_val$bwt, yh = predict(lm3,bwt_val))
+rmse(bwt_val$bwt, yh = predict(lm4,bwt_val))
+
+
+lmtrn <- lm(bwt~age+lwt+race+smoke, data = bwt_trn)
+rmse(bwt_tst$bwt, yh = predict(lmtrn,bwt_tst))
+```
+
+```{r}
+# set seed 
+set.seed(38264)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lmtrn <- lm(bwt~age+lwt+smoke, data = bwt_trn)
+predict(lmtrn, data.frame(age=21, lwt=140, smoke='smoker'))/1000
+predict(lmtrn, data.frame(age=21, lwt=140, smoke='non-smoker'))/1000
+```
+
+```{r}
+# set seed 
+set.seed(48136)
+
+# load data
+bwt = as_tibble(MASS::birthwt)
+
+# data prep
+bwt = bwt %>% 
+  select(-low, -ht, -ui) %>% 
+  mutate(race = factor(race, labels = c("white", "black", "other")),
+         smoke = factor(smoke, labels = c("non-smoker", "smoker")))
+
+# test-train split
+bwt_trn_idx = sample(nrow(bwt), size = 0.8 * nrow(bwt))
+bwt_trn = bwt[bwt_trn_idx, ]
+bwt_tst = bwt[-bwt_trn_idx, ]
+
+# estimation-validation split
+bwt_est_idx = sample(nrow(bwt_trn), size = 0.8 * nrow(bwt_trn))
+bwt_est = bwt_trn[bwt_est_idx, ]
+bwt_val = bwt_trn[-bwt_est_idx, ]
+
+
+lmtrn <- lm(bwt~age+lwt+smoke, data = bwt_trn)
+predict(lmtrn, data.frame(age=39, lwt=136, smoke='smoker'), level = 0.91, interval = "confidence")
+predict(lmtrn, data.frame(age=39, lwt=136, smoke='smoker'), level = 0.96, interval = "prediction")
+```
+

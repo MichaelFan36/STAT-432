@@ -1,0 +1,106 @@
+---
+title: "Midterm Review"
+output: html_document
+---
+
+Quiz 1:
+```{r}
+# USE TO CALCULATE NORMAL DISTRIBUTION
+?dnorm
+dnorm(7.47, 3.6, 3.4)
+```
+
+```{r}
+# USE TO CALCULATE P(X < SPCIFIC VALUE)
+# P(x = 2.19) = 0
+pnorm(-0.47, 2, 3)
+pnorm(10.2,2,3) - pnorm(4.34,2,3)
+pnorm(1.28, 2,3,lower.tail = FALSE)
+```
+
+```{r}
+# USE TO CALCULATE A VALUE SUCH THAT P(X < A VALUE) = SOME PROBABILITY
+qnorm(0.88,9.8,2.9)
+qnorm(0.47,9.8,2.9,lower.tail = FALSE)
+```
+
+```{r}
+# USE TO CALCULATE POISSON DISTRIBUTION
+?dpois
+dpois(3,7.7)
+ppois(3,7.7) - ppois(1,7.7) + dpois(1,7.7)
+ppois(5,7.7,lower.tail = FALSE)
+```
+
+```{r}
+# set seed 
+set.seed(61554)
+
+# create some data
+some_data = rexp(n = 1000, rate = 2.5)
+
+mean(some_data)
+median(some_data)
+var(some_data)
+sd(some_data)
+```
+```{r}
+# load packages
+library("mlbench")
+library("tibble")
+
+# set seed 
+set.seed(33824)
+
+# create some data, coerce to tibble
+some_data = as_tibble(mlbench.2dnormals(n = 500, cl = 3))
+sum(some_data$classes == 1)
+a = which(some_data$classes == 1)
+length(a)
+b = some_data$x.1
+sd(b)
+c = some_data$x.2
+mean(c > 2)
+```
+```{r}
+# set seed 
+set.seed(69200)
+
+# create x and y data vectors
+x = rnorm(n = 500, mean = 5, sd = 2)
+y = rnorm(n = 500, mean = 4, sd = 2)
+
+sqrt(sum((x-y)^2)/500)
+sum(abs(x-y)/500)
+```
+```{r}
+prior = c(0.55, 0.37, 0.08)
+0.37 * dpois(x = 5, lambda = 6.27) + 0.55 * dpois(x = 5, lambda = 2.3) + 0.08 * dpois(x = 5, lambda =  8.84)
+```
+```{r}
+# set seed 
+set.seed(99315)
+
+# generate data from known poisson distribution
+pois_data = rpois(n = 250, lambda = 3.5)
+
+# check data
+head(pois_data, n = 10)
+?rpois
+```
+
+```{r}
+# ML Tasks = {Supervised, Unsupervised} -> one with Response, one without.
+
+# Supervised = {Regression, Classification}
+# Regression = {Parametric, Nonparametric} Nonparametric = {KNN, Decision Trees}
+
+# Unsupervised = {Density estimation(Joint Distribution), Outlier Detection, Clustering, Dimension Reduction}
+```
+
+Naive_Bayes
+![Naive_Bayes](Naive_Bayes.png)
+```{r}
+
+```
+
