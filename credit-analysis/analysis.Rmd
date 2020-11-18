@@ -1,0 +1,193 @@
+---
+title: "Credit Analysis"
+author: "Zhicong Fan (zhicong2@illinois.edu)"
+date: "11/17/2020"
+output:
+  html_document: 
+    theme: default
+    toc: yes
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
+```
+
+```{r, load-packages, include = FALSE}
+# load packages
+library("tidyverse")
+library("caret")
+library("rpart")
+library("rpart.plot")
+library("PRROC")
+library("ROCR")
+library("MLmetrics")
+```
+
+```{r make-data, warning = FALSE, message = FALSE}
+# read data and subset
+source("make-data.R")
+```
+
+```{r read-full-data, warning = FALSE, message = FALSE}
+# read full data
+cc = data.table::fread("data/cc.csv.gz")
+```
+
+```{r read-subset-data, warning = FALSE, message = FALSE}
+# read subset of data
+cc_sub = data.table::fread("data/cc-sub.csv")
+```
+
+***
+
+## Abstract
+
+> Abstract text goes here.
+Use different models to detect credit card fraud.
+***
+
+## Introduction
+
+Since in actual world, fraudulent credit card transactions happen a lot, we need train models to detect if a card is farudulent.
+
+***
+
+## Methods
+
+In this analysis, Method "Area Under the Precision-Recall Curve (AUPRC)" would be used to measure the accuracy.
+
+### Data
+
+The data in this dataset is extremely unbalanced. Therefore, the confusion matrix could not be applied here. 
+
+### Modeling
+
+```{r}
+# Creating Train/Test dataset
+set.seed((42))
+trn_idx = createDataPartition(cc$Class, p = 0.80, list = TRUE)
+cc_trn = cc[trn_idx$Resample1, ]
+cc_tst = cc[-trn_idx$Resample1, ]
+
+# Creating Estimation/Validation dataset
+trn_idx_sub = createDataPartition(cc_sub$Class, p = 0.80, list = TRUE)
+cc_trn_sub = cc_sub[trn_idx_sub$Resample1, ]
+cc_tst_sub = cc_sub[-trn_idx_sub$Resample1, ]
+
+table(cc_trn$Class)
+```
+
+```{r}
+cc_trn_full = na.omit(cc_trn_sub)
+est_idx = createDataPartition(cc_trn_sub$Class, p = 0.80, list = TRUE)
+cc_est = cc_trn_sub[est_idx$Resample1, ]
+cc_val = cc_trn_sub[-est_idx$Resample1, ]
+
+table(cc_est$Class)
+table(cc_val$Class)
+
+# establishing first baseline
+table(
+  actual = cc_val$Class,
+  predicted = rep("fraud", length(cc_val$Class))
+)
+```
+```{r}
+cc_trn_full = na.omit(cc_trn)
+est_idx = createDataPartition(cc_trn$Class, p = 0.80, list = TRUE)
+cc_est = cc_trn[est_idx$Resample1, ]
+cc_val = cc_trn[-est_idx$Resample1, ]
+
+table(cc_est$Class)
+table(cc_val$Class)
+
+# establishing first baseline
+table(
+  actual = cc_val$Class,
+  predicted = rep("fraud", length(cc_val$Class))
+)
+
+
+best_tree_mod = rpart(Class~., data = cc_est, cp = 0)
+
+PRAUC(y_pred = predict(best_tree_mod, cc_val, type = "prob")[, 1], y_true = cc_val$Class)
+
+
+best_knn_mod = knn3(Class~., data = cc_est, k = 9)
+
+PRAUC(y_pred = predict(best_knn_mod, cc_val, type = "prob")[, 1], y_true = cc_val$Class)
+
+```
+
+```{r}
+cc_trn_full = na.omit(cc_trn_sub)
+est_idx = createDataPartition(cc_trn_sub$Class, p = 0.80, list = TRUE)
+cc_est = cc_trn_sub[est_idx$Resample1, ]
+cc_val = cc_trn_sub[-est_idx$Resample1, ]
+
+cv_5 = trainControl(method = "cv", number = 5)
+
+cc_tree_tune = expand.grid(
+  cp = c(0, 0.0001, 0.001, 0.01, 0.1, 1)
+)
+
+cc_knn_tune = expand.grid(
+  k = 1:100
+)
+
+cc_tree_mod = train(form = Class~.,
+                    data = cc_est,
+                    method = "rpart",
+                    trControl = cv_5,
+                    tuneLength = 10)
+
+tree_accuracy = PRAUC(y_pred = predict(cc_tree_mod, cc_val, type = "prob")[, 1], y_true = cc_val$Class)
+
+cc_knn_mod = train(form = Class~.,
+                   data = cc_est,
+                   method = "knn",
+                   trControl = cv_5,
+                   tuneLength = 10)
+
+knn_accuracy = PRAUC(y_pred = predict(cc_knn_mod, cc_val, type = "prob")[, 1], y_true = cc_val$Class)
+```
+
+***
+```{r}
+tree_accuracy
+knn_accuracy
+```
+
+## Results
+
+cc_train is too large to run knn model. I ran cc_train_sub instead which only has 10000 obs.
+If Training with rpart tree model using the cc_train dataset, and set tunelength to 10:
+cc_tree_mod = train(form = Class~.,
+                    data = cc_est,
+                    method = "rpart"
+                    tuneLength = 10)
+We would have cp = 0 that would make the highest accuracy.
+When cp = 0, under PRAUC, we achieve an accuracy of 98.1755% to detect the fraud card
+But if we only use cc_train_sub dataset, the accuracy of tree model would just be 49.94%
+
+
+On the other hand, if we use knn model to train the data, we would achieve higher accuracy with only a few dataset:
+If Training with knn tree model using the cc_train dataset, and set tunelength to 10:
+cc_knn_mod = train(form = Class~.,
+                    data = cc_est,
+                    method = "knn"
+                    tuneLength = 10)
+We would have k = 9 that would make the highest accuracy.
+When k = 9, under PRAUC, we achieve an accuracy of 97.65% to detect the fraud card
+What's more, if we only use cc_train_sub dataset, the accuracy of tree model would just be 98.81%
+***
+
+## Discussion
+
+Based on the traning model, if we choose to knn model, we are very likely to find the fraud card in the transactions based on all the factors in the dataset. So if we want to use the large dataset, we should use knn and if we want to use the small dataset, we should use kpart.
+
+***
+
+## Appendix
+
+Place potential additional information here.

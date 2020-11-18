@@ -6,7 +6,7 @@ library("rpart.plot")
 # read in the data
 
 #You might have to modify this using your own path.
-hd = read_csv("C:/Users/cozyn/Desktop/STATS432/heart-analysis/data/hd.csv")
+hd = read_csv("C:/Users/cozyn/Desktop/STATS432/STAT-432/heart-analysis/data/hd.csv")
 
 # test train split the data
 set.seed((42))
@@ -35,7 +35,7 @@ hd_trn$restecg = factor(hd_trn$restecg)
 hd_trn$exang = factor
 
 
-#additionla feature engineering 
+#additionla feature engineering
 hd_trn[which(hd_trn$chol == 0), ]$chol = NA
 
 # look at the data
@@ -53,7 +53,7 @@ rpart::rpart(num~., data=hd_trn)
 
 
 hd_trn_full = na.omit(hd_trn)
- 
+
 # estimation-validation split the data
 set.seed((42))
 trn_idx = createDataPartition(hd_trn_full$num, p = 0.80, list = TRUE)
@@ -107,28 +107,28 @@ hd_gbm_tune = expand.grid(
   n.minobsinnode = c(5,10)
 )
 
-hd_tree_mod = train(form = num~., 
-                    data = hd_trn_full, 
-                    method = "rpart", 
-                    trControl = cv_5, 
+hd_tree_mod = train(form = num~.,
+                    data = hd_trn_full,
+                    method = "rpart",
+                    trControl = cv_5,
                     tuneLength = 10)
 
-hd_knn_mod = train(form = num~., 
-                    data = hd_trn_full, 
-                    method = "knn", 
-                    trControl = cv_5, 
+hd_knn_mod = train(form = num~.,
+                    data = hd_trn_full,
+                    method = "knn",
+                    trControl = cv_5,
                     tuneGrid = hd_knn_tune)
 
-hd_gbm_mod = train(form = num~., 
-                   data = hd_trn_full, 
-                   method = "gbm", 
+hd_gbm_mod = train(form = num~.,
+                   data = hd_trn_full,
+                   method = "gbm",
                    trControl = cv_5,
                    tuneGrid = hd_gbm_tune,
                    verbose = FALSE)
 
-hd_rf_mod = train(form = num~., 
-                   data = hd_trn_full, 
-                   method = "rf", 
+hd_rf_mod = train(form = num~.,
+                   data = hd_trn_full,
+                   method = "rf",
                    trControl = cv_5,
                    verbose = FALSE)
 
