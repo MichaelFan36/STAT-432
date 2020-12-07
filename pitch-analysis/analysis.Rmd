@@ -1,0 +1,152 @@
+---
+title: "MLB Pitches"
+author: "Zhicong Fan (zhicong2@illinois.edu)"
+date: "11/29/2020"
+output:
+  html_document: 
+    theme: default
+    toc: yes
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
+```
+
+```{r, load-packages, include = FALSE}
+# load packages
+library("tidyverse")
+library("caret")
+library("rpart")
+library("rpart.plot")
+library("PRROC")
+library("ROCR")
+library("MLmetrics")
+library("dplyr")
+```
+
+```{r read-data, warning = FALSE, message = FALSE}
+# read subset of data
+pitches_2020_regular = readr::read_csv("data/pitches_2020_regular.csv")
+pitches_2020_missing = readr::read_csv("data/pitches_2020_missing.csv")
+pitches_2020_post = readr::read_csv("data/pitches_2020_post.csv")
+pitches_2020_regular = subset(pitches_2020_regular, select = -c(game_date,batter,pitcher))
+pitches_2020_post = subset(pitches_2020_post, select = -c(game_date,batter,pitcher))
+pitches_2020_missing = subset(pitches_2020_missing, select = -c(game_date,batter,pitcher))
+```
+
+***
+
+## Abstract
+
+> Baseball is an incredibly data-driven sport and we want to help with the future analyses.
+
+***
+
+## Introduction
+
+Baseball is an interesting sport and even though I know little about this sport. I would like to dive into the dataset and explore more about predicting what type of ball is thrown. In this last analysis, I am going to apply the models like tree model and knn model.
+***
+
+## Modeling
+
+```{r}
+# Creating Train/Test dataset
+set.seed((42))
+trn_idx = createDataPartition(pitches_2020_regular$pitch_type, p = 0.80, list = TRUE)
+pitches_2020_regular_trn = pitches_2020_regular[trn_idx$Resample1, ]
+pitches_2020_regular_tst = pitches_2020_regular[-trn_idx$Resample1, ]
+
+trn_idx_post = createDataPartition(pitches_2020_post$pitch_type, p = 0.80, list = TRUE)
+pitches_2020_post_trn = pitches_2020_post[trn_idx_post$Resample1, ]
+pitches_2020_post_tst = pitches_2020_post[-trn_idx_post$Resample1, ]
+
+summary(pitches_2020_regular_trn)
+summary(pitches_2020_post_trn)
+```
+
+```{r}
+est_idx = createDataPartition(pitches_2020_regular_trn$pitch_type, p = 0.80, list = TRUE)
+pitches_2020_regular_est = pitches_2020_regular_trn[est_idx$Resample1, ]
+pitches_2020_regular_val = pitches_2020_regular_trn[-est_idx$Resample1, ]
+
+summary(pitches_2020_regular_est)
+```
+
+
+```{r}
+# coerce character variables to be factors
+pitches_2020_regular_trn$pitch_type = factor(pitches_2020_regular_trn$pitch_type)
+pitches_2020_regular_trn$release_speed = factor(pitches_2020_regular_trn$release_speed)
+pitches_2020_regular_trn$release_pos_x = factor(pitches_2020_regular_trn$release_pos_x)
+pitches_2020_regular_trn$release_pos_z = factor(pitches_2020_regular_trn$release_pos_z)
+pitches_2020_regular_trn$pfx_x = factor(pitches_2020_regular_trn$pfx_x)
+pitches_2020_regular_trn$pfx_z = factor(pitches_2020_regular_trn$pfx_z)
+pitches_2020_regular_trn$vy0 = factor(pitches_2020_regular_trn$vy0)
+pitches_2020_regular_trn$ax = factor(pitches_2020_regular_trn$ax)
+pitches_2020_regular_trn$az = factor(pitches_2020_regular_trn$az)
+pitches_2020_regular_trn$effective_speed = factor(pitches_2020_regular_trn$effective_speed)
+pitches_2020_regular_trn$release_spin_rate = factor(pitches_2020_regular_trn$release_spin_rate)
+
+
+pitches_2020_regular_trn_full = na.omit(pitches_2020_post_trn)
+
+cv_5 = trainControl(method = "cv", number = 5)
+```
+
+
+```{r}
+pitch_tree_mod = train(form = pitch_type~.,
+                    data = pitches_2020_regular_trn_full,
+                    method = "rpart",
+                    trControl = cv_5,
+                    tuneLength = 10)
+pitch_tree_mod
+```
+
+
+```{r}
+pitch_knn_mod = train(form = pitch_type~.,
+                    data = pitches_2020_regular_trn_full,
+                    method = "knn",
+                    trControl = cv_5,
+                    tuneLength = 10)
+pitch_knn_mod
+```
+
+
+```{r}
+predict(pitch_tree_mod, pitches_2020_missing, type = "raw")
+```
+
+
+```{r}
+predict(pitch_knn_mod, pitches_2020_missing, type = "raw")
+```
+
+
+
+
+### Data
+There are 7 classes in this dataset: CH, CU, FF, FC FS, SI and SL. For the parameters, I am only going to use those except for batter, pitcher and game_date since these are either no relevant to my prediction or there exists another parameter could replace its role.
+
+
+### Method
+
+I used knn and rpart model to predict both the post season and the missing label. 
+***
+
+## Results
+
+Since both models output only accuracy around 80%, I am going to introduce new models in the next analysis.
+
+***
+
+## Discussion
+
+Using all the regular data, I achieved an accuracy of 80% of both predicting test data split from the regular season and the test data constructed by the whole post season. For the missing data, both the models gave out the 6th move which is "SI".
+
+***
+
+## Appendix
+
+Place potential additional information here.

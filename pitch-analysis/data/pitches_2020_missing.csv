@@ -1,0 +1,2 @@
+pitch_type,game_date,release_speed,release_pos_x,release_pos_y,release_pos_z,player_name,batter,pitcher,zone,stand,p_throws,pfx_x,pfx_z,plate_x,plate_z,vx0,vy0,vz0,ax,ay,az,effective_speed,release_spin_rate,release_extension
+null,2020-08-20,95.4,-2.24,-2.24,6.35,Manny Machado,592518,472610,14,R,R,-0.83,0.81,1.08,1.23,10.5713420300827,-138.282227348141,-9.6723589380287,-12.8400411135142,28.614691436939,-19.7885356824791,95.6,2226,6.4
